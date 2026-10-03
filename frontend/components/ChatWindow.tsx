@@ -133,7 +133,7 @@ export default function ChatWindow() {
                         }
                     }}
                     placeholder="Type your message..."
-                    className="flex-1 rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-gray-500"
+                    className="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-gray-500"
                     disabled={loading}
                 />
 
