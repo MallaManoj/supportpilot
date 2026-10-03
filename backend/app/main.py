@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from app.db import save_conversation
+from app.db import create_conversation, save_message
 
 app = FastAPI(title="SupportPilot API")
 
@@ -26,13 +26,26 @@ def health_check():
 
 @app.post("/chat")
 def chat(request: ChatRequest):
+    conversation_id = create_conversation(
+        user_id=1,
+        title="Support conversation",
+    )
+
+    save_message(
+        conversation_id=conversation_id,
+        role="user",
+        content=request.message,
+    )
+
     reply = f"SupportPilot received: {request.message}"
 
-    save_conversation(
-        user_message=request.message,
-        assistant_message=reply,
+    save_message(
+        conversation_id=conversation_id,
+        role="assistant",
+        content=reply,
     )
 
     return {
-        "reply": reply
+        "reply": reply,
+        "conversation_id": conversation_id,
     }
