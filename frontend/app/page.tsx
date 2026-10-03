@@ -1,6 +1,5 @@
 import Header from "@/components/Header";
 import ChatWindow from "@/components/ChatWindow";
-import ChatInput from "@/components/ChatInput";
 
 export default function Home() {
   return (
@@ -17,8 +16,6 @@ export default function Home() {
         </p>
 
         <ChatWindow />
-
-        <ChatInput />
       </section>
     </main>
   );
