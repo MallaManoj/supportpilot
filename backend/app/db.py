@@ -187,3 +187,59 @@ def create_user(
         return user_id
     finally:
         connection.close()
+
+
+def get_messages_for_user(
+    conversation_id: int,
+    user_id: int,
+):
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    messages.id,
+                    messages.role,
+                    messages.content,
+                    messages.created_at
+                FROM messages
+                JOIN conversations
+                    ON messages.conversation_id = conversations.id
+                WHERE messages.conversation_id = %s
+                  AND conversations.user_id = %s
+                ORDER BY messages.created_at
+                """,
+                (conversation_id, user_id),
+            )
+
+            rows = cursor.fetchall()
+
+        return rows
+    finally:
+        connection.close()
+
+def conversation_belongs_to_user(
+    conversation_id: int,
+    user_id: int,
+) -> bool:
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT 1
+                FROM conversations
+                WHERE id = %s
+                  AND user_id = %s
+                """,
+                (conversation_id, user_id),
+            )
+
+            row = cursor.fetchone()
+
+        return row is not None
+    finally:
+        connection.close()

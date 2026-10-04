@@ -1,18 +1,29 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from fastapi import HTTPException
-from app.db import create_user, get_user_by_email
-from app.schemas import LoginRequest, RegisterRequest
-from app.security import create_access_token, verify_password
 
 from app.db import (
+    create_user,
+    get_user_by_email,
     create_conversation,
     get_conversations,
-    get_messages,
     save_message,
+    get_messages_for_user,
+    conversation_belongs_to_user,
 )
+from app.schemas import LoginRequest, RegisterRequest
+from app.security import (
+    create_access_token,
+    verify_password,
+    decode_access_token,
+    hash_password,
+)
+
 app = FastAPI(title="SupportPilot API")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/auth/login"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,9 +34,25 @@ app.add_middleware(
 )
 
 
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+) -> int:
+    try:
+        return decode_access_token(token)
+    except ValueError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired authentication token",
+            headers={
+                "WWW-Authenticate": "Bearer"
+            },
+        )
+
+
 class ChatRequest(BaseModel):
     message: str
     conversation_id: int
+
 
 @app.get("/health")
 def health_check():
@@ -33,7 +60,19 @@ def health_check():
 
 
 @app.post("/chat")
-def chat(request: ChatRequest):
+def chat(
+    request: ChatRequest,
+    current_user_id: int = Depends(get_current_user),
+):
+    if not conversation_belongs_to_user(
+        conversation_id=request.conversation_id,
+        user_id=current_user_id,
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
     save_message(
         conversation_id=request.conversation_id,
         role="user",
@@ -53,25 +92,44 @@ def chat(request: ChatRequest):
         "conversation_id": request.conversation_id,
     }
 
+
 class ConversationRequest(BaseModel):
     user_id: int = 1
     title: str = "Support conversation"
 
+
 @app.post("/conversations")
-def create_new_conversation(request: ConversationRequest = ConversationRequest()):
+def create_new_conversation(
+    current_user_id: int = Depends(get_current_user),
+):
     conversation_id = create_conversation(
-        user_id=request.user_id,
-        title=request.title,
+        user_id=current_user_id,
+        title="New conversation",
     )
 
     return {
-        "conversation_id": conversation_id,
+        "conversation_id": conversation_id
     }
 
 
 @app.get("/conversations/{conversation_id}/messages")
-def get_conversation_messages(conversation_id: int):
-    rows = get_messages(conversation_id)
+def get_conversation_messages(
+    conversation_id: int,
+    current_user_id: int = Depends(get_current_user),
+):
+    if not conversation_belongs_to_user(
+        conversation_id=conversation_id,
+        user_id=current_user_id,
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
+    rows = get_messages_for_user(
+        conversation_id=conversation_id,
+        user_id=current_user_id,
+    )
 
     return {
         "conversation_id": conversation_id,
@@ -86,9 +144,14 @@ def get_conversation_messages(conversation_id: int):
         ],
     }
 
+
 @app.get("/conversations")
-def list_conversations():
-    rows = get_conversations(user_id=1)
+def list_conversations(
+    current_user_id: int = Depends(get_current_user),
+):
+    rows = get_conversations(
+        user_id=current_user_id
+    )
 
     return {
         "conversations": [
@@ -127,9 +190,10 @@ def register(request: RegisterRequest):
         "email": request.email,
     }
 
+
 @app.post("/auth/login")
-def login(request: LoginRequest):
-    user = get_user_by_email(request.email)
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = get_user_by_email(form_data.username)
 
     if not user:
         raise HTTPException(
@@ -147,7 +211,7 @@ def login(request: LoginRequest):
         )
 
     if not verify_password(
-        request.password,
+        form_data.password,
         password_hash,
     ):
         raise HTTPException(

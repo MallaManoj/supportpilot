@@ -4,8 +4,7 @@ import os
 
 from datetime import datetime, timedelta, timezone
 
-from jose import jwt
-
+from jose import JWTError, jwt
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -59,3 +58,21 @@ def verify_password(
         password_bytes,
         hash_bytes,
     )
+
+def decode_access_token(token: str) -> int:
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+
+        subject = payload.get("sub")
+
+        if subject is None:
+            raise ValueError("Token subject is missing")
+
+        return int(subject)
+
+    except (JWTError, ValueError):
+        raise ValueError("Invalid authentication token")
