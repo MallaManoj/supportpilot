@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi import HTTPException
 from app.db import create_user, get_user_by_email
-from app.schemas import RegisterRequest
-from app.security import hash_password
+from app.schemas import LoginRequest, RegisterRequest
+from app.security import create_access_token, verify_password
 
 from app.db import (
     create_conversation,
@@ -125,4 +125,39 @@ def register(request: RegisterRequest):
         "user_id": user_id,
         "name": request.name,
         "email": request.email,
+    }
+
+@app.post("/auth/login")
+def login(request: LoginRequest):
+    user = get_user_by_email(request.email)
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password",
+        )
+
+    user_id = user[0]
+    password_hash = user[3]
+
+    if not password_hash:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password",
+        )
+
+    if not verify_password(
+        request.password,
+        password_hash,
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password",
+        )
+
+    access_token = create_access_token(user_id)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
     }
