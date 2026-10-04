@@ -1,6 +1,11 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    Response,
+    Request
+)
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
 from app.db import (
@@ -21,9 +26,6 @@ from app.security import (
 )
 
 app = FastAPI(title="SupportPilot API")
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/auth/login"
-)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,17 +37,19 @@ app.add_middleware(
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    access_token: str | None = Cookie(default=None),
 ) -> int:
+    if not access_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+        )
     try:
-        return decode_access_token(token)
+        return decode_access_token(access_token)
     except ValueError:
         raise HTTPException(
             status_code=401,
             detail="Invalid or expired authentication token",
-            headers={
-                "WWW-Authenticate": "Bearer"
-            },
         )
 
 
@@ -192,8 +196,11 @@ def register(request: RegisterRequest):
 
 
 @app.post("/auth/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = get_user_by_email(form_data.username)
+def login(
+    request: LoginRequest,
+    response: Response,
+):
+    user = get_user_by_email(request.email)
 
     if not user:
         raise HTTPException(
@@ -211,7 +218,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
 
     if not verify_password(
-        form_data.password,
+        request.password,
         password_hash,
     ):
         raise HTTPException(
@@ -221,7 +228,23 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
     access_token = create_access_token(user_id)
 
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60 * 60,
+    )
+
     return {
-        "access_token": access_token,
-        "token_type": "bearer",
+        "message": "Login successful",
+    }
+
+@app.get("/auth/me")
+def get_me(
+    current_user_id: int = Depends(get_current_user),
+):
+    return {
+        "user_id": current_user_id,
     }
