@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 type AuthMode = "login" | "register";
 
-type AuthFormProps = {
-    onAuthenticated: () => void;
-};
-
-export default function AuthForm({
-    onAuthenticated,
-}: AuthFormProps) {
+export default function AuthForm() {
+    const { login } = useAuth();
     const [mode, setMode] = useState<AuthMode>("login");
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
@@ -89,8 +85,8 @@ export default function AuthForm({
 
             console.log("Login successful:", data);
 
-            // Using cookie based authentication, no need to pass a token
-            onAuthenticated();
+            // Fetch the user data using the HttpOnly cookie
+            await login();
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
