@@ -17,6 +17,7 @@ from app.db import (
     save_message,
     get_messages_for_user,
     conversation_belongs_to_user,
+    get_user_by_id,
 )
 from app.schemas import LoginRequest, RegisterRequest
 from app.security import (
@@ -30,7 +31,7 @@ app = FastAPI(title="SupportPilot API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+):3000",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -247,8 +248,17 @@ def login(
 def get_me(
     current_user_id: int = Depends(get_current_user),
 ):
+    user_row = get_user_by_id(current_user_id)
+    if not user_row:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+        
     return {
-        "user_id": current_user_id,
+        "id": user_row[0],
+        "name": user_row[1],
+        "email": user_row[2],
     }
 
 @app.post("/auth/logout")

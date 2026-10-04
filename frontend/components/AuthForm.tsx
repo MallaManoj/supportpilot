@@ -91,9 +91,9 @@ export default function AuthForm({
 
             // Using cookie based authentication, no need to pass a token
             onAuthenticated();
-        } catch (error) {
-            if (error instanceof Error) {
-                setError(error.message);
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
             } else {
                 setError("Something went wrong");
             }

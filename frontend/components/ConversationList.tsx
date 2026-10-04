@@ -29,7 +29,7 @@ export default function ConversationList({
             </button>
 
             <div className="space-y-2">
-                {conversations.map((conversation) => (
+                {(conversations || []).map((conversation) => (
                     <button
                         key={conversation.id}
                         onClick={() =>

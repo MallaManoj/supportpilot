@@ -5,6 +5,7 @@ import ConversationList from "@/components/ConversationList";
 import ChatWindow from "@/components/ChatWindow";
 import AuthForm from "@/components/AuthForm";
 import { Conversation } from "@/types/conversation";
+import type { User } from "@/types/user";
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,6 +13,7 @@ export default function Home() {
   const [selectedConversationId, setSelectedConversationId] =
     useState<number | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [user, setUser] = useState<User | null>(null);
 
   const handleAuthenticated = () => {
     setIsAuthenticated(true);
@@ -28,8 +30,12 @@ export default function Home() {
         );
 
         if (response.ok) {
+          const data: User = await response.json();
+
+          setUser(data);
           setIsAuthenticated(true);
         } else {
+          setUser(null);
           setIsAuthenticated(false);
         }
       } catch (error) {
@@ -38,6 +44,7 @@ export default function Home() {
           error
         );
 
+        setUser(null);
         setIsAuthenticated(false);
       } finally {
         setIsLoadingAuth(false);
@@ -100,6 +107,7 @@ export default function Home() {
       );
 
       if (response.ok) {
+        setUser(null);
         setIsAuthenticated(false);
       }
     } catch (error) {
@@ -128,14 +136,20 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen">
-      <aside className="w-80 border-r flex flex-col justify-between">
+      <aside className="w-80 border-r flex flex-col">
+        {user && (
+          <div className="border-b p-4">
+            <p className="font-semibold">{user.name}</p>
+            <p className="text-sm">{user.email}</p>
+          </div>
+        )}
         <ConversationList
           conversations={conversations}
           selectedConversationId={selectedConversationId}
           onSelectConversation={setSelectedConversationId}
           onCreateConversation={handleCreateConversation}
         />
-        <div className="p-4 border-t">
+        <div className="p-4 border-t mt-auto">
           <button
             type="button"
             onClick={handleLogout}
