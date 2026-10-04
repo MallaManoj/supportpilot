@@ -133,3 +133,57 @@ def get_conversations(user_id: int):
         return rows
     finally:
         connection.close()
+
+
+def get_user_by_email(email: str):
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    name,
+                    email,
+                    password_hash
+                FROM users
+                WHERE email = %s
+                """,
+                (email,),
+            )
+
+            row = cursor.fetchone()
+
+        return row
+    finally:
+        connection.close()
+
+def create_user(
+    name: str,
+    email: str,
+    password_hash: str,
+) -> int:
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO users (
+                    name,
+                    email,
+                    password_hash
+                )
+                VALUES (%s, %s, %s)
+                RETURNING id
+                """,
+                (name, email, password_hash),
+            )
+
+            user_id = cursor.fetchone()[0]
+
+        connection.commit()
+        return user_id
+    finally:
+        connection.close()

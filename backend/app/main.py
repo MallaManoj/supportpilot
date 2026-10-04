@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi import HTTPException
+from app.db import create_user, get_user_by_email
+from app.schemas import RegisterRequest
+from app.security import hash_password
 
 from app.db import (
     create_conversation,
@@ -95,4 +99,30 @@ def list_conversations():
             }
             for row in rows
         ]
+    }
+
+
+@app.post("/auth/register")
+def register(request: RegisterRequest):
+    existing_user = get_user_by_email(request.email)
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Email is already registered",
+        )
+
+    password_hash = hash_password(request.password)
+
+    user_id = create_user(
+        name=request.name,
+        email=request.email,
+        password_hash=password_hash,
+    )
+
+    return {
+        "message": "User registered successfully",
+        "user_id": user_id,
+        "name": request.name,
+        "email": request.email,
     }
