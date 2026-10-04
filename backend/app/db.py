@@ -243,3 +243,28 @@ def conversation_belongs_to_user(
         return row is not None
     finally:
         connection.close()
+
+
+def get_user_by_id(user_id: int):
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    name,
+                    email
+                FROM users
+                WHERE id = %s
+                """,
+                (user_id,),
+            )
+
+            row = cursor.fetchone()
+
+        return row
+
+    finally:
+        connection.close()
