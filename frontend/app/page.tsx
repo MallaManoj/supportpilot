@@ -1,22 +1,70 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import ConversationList from "@/components/ConversationList";
 import Header from "@/components/Header";
 import ChatWindow from "@/components/ChatWindow";
+import { Conversation } from "@/types/conversation";
 
 export default function Home() {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversationId, setSelectedConversationId] =
+    useState<number | null>(null);
+
+  useEffect(() => {
+    async function loadConversations() {
+      const response = await fetch(
+        "http://127.0.0.1:8000/conversations"
+      );
+
+      const data = await response.json();
+
+      setConversations(data.conversations);
+    }
+
+    loadConversations();
+  }, []);
+
+  async function handleCreateConversation() {
+      const response = await fetch(
+          "http://127.0.0.1:8000/conversations",
+          {
+              method: "POST",
+          }
+      );
+
+      const data = await response.json();
+
+      const newConversation: Conversation = {
+          id: data.conversation_id,
+          title: "New conversation",
+          created_at: new Date().toISOString(),
+      };
+
+      setConversations((current) => [
+          newConversation,
+          ...current,
+      ]);
+
+      setSelectedConversationId(data.conversation_id);
+  }
+
   return (
-    <main className="min-h-screen bg-gray-50">
+    <div className="flex h-screen flex-col">
       <Header />
 
-      <section className="mx-auto max-w-3xl px-6 py-10">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          How can we help?
-        </h2>
+      <div className="flex flex-1">
+        <ConversationList
+          conversations={conversations}
+          selectedConversationId={selectedConversationId}
+          onSelectConversation={setSelectedConversationId}
+          onCreateConversation={handleCreateConversation}
+        />
 
-        <p className="mt-2 text-gray-500">
-          Ask a question about your product, account, orders, or subscription.
-        </p>
-
-        <ChatWindow />
-      </section>
-    </main>
+        <ChatWindow
+          conversationId={selectedConversationId}
+        />
+      </div>
+    </div>
   );
 }

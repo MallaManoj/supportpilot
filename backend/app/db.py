@@ -82,3 +82,54 @@ def save_message(
         return message_id
     finally:
         connection.close()
+
+
+def get_messages(conversation_id: int):
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    role,
+                    content,
+                    created_at
+                FROM messages
+                WHERE conversation_id = %s
+                ORDER BY created_at
+                """,
+                (conversation_id,),
+            )
+
+            rows = cursor.fetchall()
+
+        return rows
+    finally:
+        connection.close()
+
+
+def get_conversations(user_id: int):
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    title,
+                    created_at
+                FROM conversations
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                """,
+                (user_id,),
+            )
+
+            rows = cursor.fetchall()
+
+        return rows
+    finally:
+        connection.close()

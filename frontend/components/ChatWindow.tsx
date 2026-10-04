@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Message } from "@/types/message";
 
 const initialMessages: Message[] = [
@@ -17,13 +17,48 @@ const initialMessages: Message[] = [
     },
 ];
 
-export default function ChatWindow() {
+type ChatWindowProps = {
+    conversationId: number | null;
+};
+
+export default function ChatWindow({ conversationId }: ChatWindowProps) {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        if (conversationId !== null) {
+            loadConversationHistory(conversationId);
+        } else {
+            setMessages(initialMessages);
+        }
+    }, [conversationId]);
+
+    async function loadConversationHistory(id: number) {
+        const response = await fetch(
+            `http://127.0.0.1:8000/conversations/${id}/messages`
+        );
+
+        const data = await response.json();
+
+        setMessages(
+            data.messages.map(
+                (message: {
+                    role: "user" | "assistant";
+                    content: string;
+                }) => ({
+                    role: message.role,
+                    content: message.content,
+                })
+            )
+        );
+    }
+
     const sendMessage = async () => {
         if (!input.trim() || loading) return;
+        if (conversationId === null) {
+            return;
+        }
 
         const content = input.trim();
 
@@ -49,6 +84,7 @@ export default function ChatWindow() {
                 },
                 body: JSON.stringify({
                     message: content,
+                    conversation_id: conversationId || 1, // Fallback if not loaded yet
                 }),
             });
 
