@@ -35,23 +35,31 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
     }, [conversationId]);
 
     async function loadConversationHistory(id: number) {
+        
         const response = await fetch(
-            `http://127.0.0.1:8000/conversations/${id}/messages`
+            `http://localhost:8000/conversations/${id}/messages`,
+            {
+                credentials: "include"
+            }
         );
 
-        const data = await response.json();
+        if (response.ok) {
+            const data = await response.json();
 
-        setMessages(
-            data.messages.map(
-                (message: {
-                    role: "user" | "assistant";
-                    content: string;
-                }) => ({
-                    role: message.role,
-                    content: message.content,
-                })
-            )
-        );
+            setMessages(
+                (data.messages || []).map(
+                    (message: {
+                        id: number;
+                        role: "user" | "assistant";
+                        content: string;
+                    }) => ({
+                        id: message.id,
+                        role: message.role === "user" ? "customer" : message.role,
+                        content: message.content,
+                    })
+                )
+            );
+        }
     }
 
     const sendMessage = async () => {
@@ -77,14 +85,15 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
         setLoading(true);
 
         try {
-            const response = await fetch("http://127.0.0.1:8000/chat", {
+            const response = await fetch("http://localhost:8000/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
+                credentials: "include",
                 body: JSON.stringify({
                     message: content,
-                    conversation_id: conversationId || 1, // Fallback if not loaded yet
+                    conversation_id: conversationId,
                 }),
             });
 

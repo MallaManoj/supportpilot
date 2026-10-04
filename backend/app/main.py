@@ -3,7 +3,8 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Response,
-    Request
+    Request,
+    Cookie
 )
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -235,6 +236,7 @@ def login(
         secure=False,
         samesite="lax",
         max_age=60 * 60,
+        path="/",
     )
 
     return {
@@ -247,4 +249,14 @@ def get_me(
 ):
     return {
         "user_id": current_user_id,
+    }
+
+@app.post("/auth/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key="access_token"
+    )
+
+    return {
+        "message": "Logout successful"
     }
