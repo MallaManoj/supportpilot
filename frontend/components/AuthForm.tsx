@@ -41,12 +41,6 @@ export default function AuthForm() {
 
                 const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(
-                        data.detail || "Registration failed"
-                    );
-                }
-
                 console.log(
                     "Registration successful:",
                     data
@@ -69,12 +63,6 @@ export default function AuthForm() {
             );
 
             const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.detail || "Login failed"
-                );
-            }
 
             console.log("Login successful:", data);
 

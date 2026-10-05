@@ -41,23 +41,21 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
             `/conversations/${id}/messages`
         );
 
-        if (response.ok) {
-            const data = await response.json();
+        const data = await response.json();
 
-            setMessages(
-                (data.messages || []).map(
-                    (message: {
-                        id: number;
-                        role: "user" | "assistant";
-                        content: string;
-                    }) => ({
-                        id: message.id,
-                        role: message.role === "user" ? "customer" : message.role,
-                        content: message.content,
-                    })
-                )
-            );
-        }
+        setMessages(
+            (data.messages || []).map(
+                (message: {
+                    id: number;
+                    role: "user" | "assistant";
+                    content: string;
+                }) => ({
+                    id: message.id,
+                    role: message.role === "user" ? "customer" : message.role,
+                    content: message.content,
+                })
+            )
+        );
     }
 
     const sendMessage = async () => {
@@ -90,10 +88,6 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
                     conversation_id: conversationId,
                 }),
             });
-
-            if (!response.ok) {
-                throw new Error("Failed to send message");
-            }
 
             const data = await response.json();
 

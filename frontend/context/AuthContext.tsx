@@ -38,12 +38,6 @@ export function AuthProvider({
   const login = async () => {
     const response = await apiFetch("/auth/me");
 
-    if (!response.ok) {
-      throw new Error(
-        "Failed to load authenticated user"
-      );
-    }
-
     const data: User = await response.json();
 
     setUser(data);
@@ -55,15 +49,10 @@ export function AuthProvider({
       try {
         const response = await apiFetch("/auth/me");
 
-        if (response.ok) {
-          const data: User = await response.json();
+        const data: User = await response.json();
 
-          setUser(data);
-          setIsAuthenticated(true);
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
+        setUser(data);
+        setIsAuthenticated(true);
       } catch (error) {
         console.error(
           "Authentication check failed:",
@@ -86,10 +75,8 @@ export function AuthProvider({
         method: "POST",
       });
 
-      if (response.ok) {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
+      setUser(null);
+      setIsAuthenticated(false);
     } catch (error) {
       console.error(
         "Logout failed:",

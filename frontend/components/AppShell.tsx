@@ -25,11 +25,7 @@ export default function AppShell({
         try {
             const response = await apiFetch("/conversations");
             const data = await response.json();
-            if (response.ok) {
-                setConversations(data.conversations || []);
-            } else {
-                alert(`Load Conversations Failed: ${data.detail || JSON.stringify(data)}`);
-            }
+            setConversations(data.conversations || []);
         } catch (error: any) {
             console.error("Failed to load conversations:", error);
             alert(`Load Conversations Error: ${error.message || error}`);
@@ -46,12 +42,8 @@ export default function AppShell({
                 method: "POST",
             });
             const data = await response.json();
-            if (response.ok) {
-                setSelectedConversationId(data.conversation_id);
-                await loadConversations();
-            } else {
-                alert(`Create Conversation Failed: ${data.detail || JSON.stringify(data)}`);
-            }
+            setSelectedConversationId(data.conversation_id);
+            await loadConversations();
         } catch (error: any) {
             console.error("Failed to create conversation:", error);
             alert(`Create Conversation Error: ${error.message || error}`);
