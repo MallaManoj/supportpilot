@@ -1,3 +1,4 @@
+import logging
 from fastapi import (
     Depends,
     FastAPI,
@@ -28,6 +29,11 @@ from app.security import (
     decode_access_token,
     hash_password,
 )
+
+logging.basicConfig(
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SupportPilot API")
 
@@ -80,6 +86,12 @@ def chat(
             status_code=404,
             detail="Conversation not found",
         )
+
+    logger.info(
+        "Chat request: user_id=%s conversation_id=%s",
+        current_user_id,
+        request.conversation_id,
+    )
 
     if not request.message.strip():
         raise HTTPException(
@@ -211,6 +223,11 @@ def register(request: RegisterRequest):
         password_hash=password_hash,
     )
 
+    logger.info(
+        "User registered: user_id=%s",
+        user_id,
+    )
+
     return {
         "message": "User registered successfully",
         "user_id": user_id,
@@ -262,6 +279,11 @@ def login(
         path="/",
     )
 
+    logger.info(
+        "User logged in: user_id=%s",
+        user_id,
+    )
+
     return {
         "message": "Login successful",
     }
@@ -288,6 +310,8 @@ def logout(response: Response):
     response.delete_cookie(
         key="access_token"
     )
+
+    logger.info("User logged out")
 
     return {
         "message": "Logout successful"
