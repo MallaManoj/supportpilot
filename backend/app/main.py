@@ -23,6 +23,7 @@ from app.db import (
     get_user_by_id,
     update_conversation_timestamp,
     update_conversation_title,
+    get_connection,
 )
 from app.schemas import LoginRequest, RegisterRequest
 from app.security import (
@@ -99,8 +100,26 @@ class ChatRequest(BaseModel):
 
 
 @app.get("/health")
-def health_check():
-    return {"status": "ok"}
+def health():
+    connection = None
+    try:
+        connection = get_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        return {
+            "status": "ok",
+            "database": "ok",
+        }
+    except Exception:
+        logger.exception("Health check failed")
+        raise HTTPException(
+            status_code=503,
+            detail="Service unavailable",
+        )
+    finally:
+        if connection:
+            connection.close()
 
 
 @app.post("/chat")
