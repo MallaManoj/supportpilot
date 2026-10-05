@@ -150,11 +150,38 @@ def get_user_by_email(email: str):
                     id,
                     name,
                     email,
-                    password_hash
+                    password_hash,
+                    role
                 FROM users
                 WHERE email = %s
                 """,
                 (email,),
+            )
+
+            row = cursor.fetchone()
+
+        return row
+    finally:
+        connection.close()
+
+
+def get_user_by_id(user_id: int):
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    name,
+                    email,
+                    password_hash,
+                    role
+                FROM users
+                WHERE id = %s
+                """,
+                (user_id,),
             )
 
             row = cursor.fetchone()
@@ -354,5 +381,174 @@ def create_document_chunk(
             chunk_id = cursor.fetchone()[0]
         connection.commit()
         return chunk_id
+    finally:
+        connection.close()
+
+
+def save_chunk_embedding(
+    chunk_id: int,
+    embedding: list[float],
+) -> None:
+    connection = get_connection()
+    try:
+        embedding_string = "[" + ",".join(map(str, embedding)) + "]"
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE document_chunks
+                SET embedding = %s
+                WHERE id = %s
+                """,
+                (embedding_string, chunk_id),
+            )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def search_similar_chunks(
+    embedding: list[float],
+    limit: int = 5,
+):
+    connection = get_connection()
+    try:
+        embedding_string = "[" + ",".join(map(str, embedding)) + "]"
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    document_chunks.id,
+                    document_chunks.document_id,
+                    documents.title,
+                    document_chunks.content,
+                    document_chunks.embedding <=> %s::vector AS distance
+                FROM document_chunks
+                JOIN documents ON documents.id = document_chunks.document_id
+                WHERE document_chunks.embedding IS NOT NULL
+                ORDER BY document_chunks.embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (
+                    embedding_string,
+                    embedding_string,
+                    limit,
+                ),
+            )
+            return cursor.fetchall()
+    finally:
+        connection.close()
+
+
+def create_ticket(user_id: int, conversation_id: int, subject: str, description: str) -> int:
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO tickets (user_id, conversation_id, subject, description)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+                """,
+                (user_id, conversation_id, subject, description),
+            )
+            ticket_id = cursor.fetchone()[0]
+        connection.commit()
+        return ticket_id
+    finally:
+        connection.close()
+
+
+def get_tickets_for_user(user_id: int):
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, conversation_id, subject, status, created_at
+                FROM tickets
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                """,
+                (user_id,),
+            )
+            return cursor.fetchall()
+    finally:
+        connection.close()
+
+
+def get_ticket_for_user(ticket_id: int, user_id: int):
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, conversation_id, subject, description, status, created_at
+                FROM tickets
+                WHERE id = %s AND user_id = %s
+                """,
+                (ticket_id, user_id),
+            )
+            return cursor.fetchone()
+    finally:
+        connection.close()
+
+
+def get_dashboard_stats():
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM tickets WHERE status = 'open'")
+            open_tickets = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM tickets WHERE status = 'resolved'")
+            resolved_tickets = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM conversations")
+            total_conversations = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(*) FROM users")
+            total_users = cursor.fetchone()[0]
+            
+        return {
+            "open_tickets": open_tickets,
+            "resolved_tickets": resolved_tickets,
+            "total_conversations": total_conversations,
+            "total_users": total_users,
+        }
+    finally:
+        connection.close()
+
+
+def get_all_tickets():
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT t.id, t.conversation_id, t.subject, t.status, t.created_at, u.name as customer_name
+                FROM tickets t
+                JOIN users u ON t.user_id = u.id
+                ORDER BY t.created_at DESC
+                """
+            )
+            return cursor.fetchall()
+    finally:
+        connection.close()
+
+
+def get_ticket_details(ticket_id: int):
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT t.id, t.conversation_id, t.subject, t.description, t.status, t.created_at, u.name as customer_name
+                FROM tickets t
+                JOIN users u ON t.user_id = u.id
+                WHERE t.id = %s
+                """,
+                (ticket_id,)
+            )
+            return cursor.fetchone()
     finally:
         connection.close()

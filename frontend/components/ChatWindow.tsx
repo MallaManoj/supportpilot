@@ -94,7 +94,8 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
             const assistantMessage: Message = {
                 id: Date.now() + 1,
                 role: "assistant",
-                content: data.reply,
+                content: data.message || data.reply,
+                citations: data.citations,
             };
 
             setMessages((currentMessages) => [
@@ -120,6 +121,33 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
         }
     };
 
+    const escalateToSupport = async () => {
+        if (conversationId === null) return;
+        setLoading(true);
+        try {
+            const response = await apiFetch("/tickets", {
+                method: "POST",
+                body: JSON.stringify({
+                    conversation_id: conversationId,
+                    subject: "Escalated from chat",
+                    description: "User requested escalation from chat window.",
+                }),
+            });
+            const data = await response.json();
+            
+            const systemMessage: Message = {
+                id: Date.now() + 2,
+                role: "assistant",
+                content: `Your issue has been escalated.\n\nTicket #${data.ticket_id}\nStatus: Open`,
+            };
+            setMessages((currentMessages) => [...currentMessages, systemMessage]);
+        } catch (err) {
+            console.error("Failed to escalate", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="mt-8">
             {/* Messages */}
@@ -138,6 +166,19 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
                         <p className="mt-2 text-gray-900">
                             {message.content}
                         </p>
+
+                        {message.citations && message.citations.length > 0 && (
+                            <div className="mt-4 border-t pt-4">
+                                <p className="text-xs font-semibold text-gray-500 uppercase">Citations:</p>
+                                <ul className="mt-2 space-y-1">
+                                    {message.citations.map((cite, idx) => (
+                                        <li key={idx} className="text-xs text-gray-400">
+                                            [{idx + 1}] {cite.title} (Doc {cite.document_id}, Chunk {cite.chunk_id})
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                 ))}
 
@@ -176,6 +217,13 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
                     className="rounded-xl bg-black px-6 py-3 text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {loading ? "Sending..." : "Send"}
+                </button>
+                <button
+                    onClick={escalateToSupport}
+                    disabled={loading || conversationId === null}
+                    className="rounded-xl bg-red-600 px-6 py-3 text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    Escalate to Support
                 </button>
             </div>
         </div>

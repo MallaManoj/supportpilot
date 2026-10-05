@@ -25,6 +25,13 @@ from app.db import (
     update_conversation_title,
     get_connection,
     create_document,
+    create_ticket,
+    get_tickets_for_user,
+    get_ticket_for_user,
+    get_dashboard_stats,
+    get_all_tickets,
+    get_ticket_details,
+    get_user_by_id,
 )
 from app.schemas import LoginRequest, RegisterRequest
 from app.security import (
@@ -33,6 +40,9 @@ from app.security import (
     decode_access_token,
     hash_password,
 )
+from app.ingestion import process_document
+from app.ai import generate_answer
+from app.rag import retrieve_context
 
 logging.basicConfig(
     level=logging.INFO,
@@ -164,21 +174,34 @@ def chat(
         conversation_title,
     )
 
-    reply = f"SupportPilot received: {request.message}"
+    context = retrieve_context(request.message)
+    assistant_message = generate_answer(
+        question=request.message,
+        context=context,
+    )
 
     save_message(
-        conversation_id=request.conversation_id,
-        role="assistant",
-        content=reply,
+        request.conversation_id,
+        "assistant",
+        assistant_message,
     )
 
     update_conversation_timestamp(
         request.conversation_id
     )
 
+    citations = [
+        {
+            "document_id": doc["document_id"],
+            "title": doc["title"],
+            "chunk_id": doc["chunk_id"]
+        }
+        for doc in context
+    ]
+
     return {
-        "reply": reply,
-        "conversation_id": request.conversation_id,
+        "message": assistant_message,
+        "citations": citations,
     }
 
 
@@ -379,7 +402,112 @@ def upload_document(
         source=None,
         content=content,
     )
+    process_document(
+        document_id=document_id,
+        content=content,
+    )
     return {
         "document_id": document_id,
         "message": "Document created",
+    }
+
+
+class TicketRequest(BaseModel):
+    conversation_id: int
+    subject: str
+    description: str
+
+
+@app.post("/tickets")
+def create_new_ticket(
+    request: TicketRequest,
+    current_user_id: int = Depends(get_current_user),
+):
+    if not conversation_belongs_to_user(request.conversation_id, current_user_id):
+        raise HTTPException(status_code=404, detail="Conversation not found")
+        
+    ticket_id = create_ticket(
+        user_id=current_user_id,
+        conversation_id=request.conversation_id,
+        subject=request.subject,
+        description=request.description,
+    )
+    return {"ticket_id": ticket_id, "message": "Ticket created"}
+
+
+@app.get("/tickets")
+def get_tickets(current_user_id: int = Depends(get_current_user)):
+    rows = get_tickets_for_user(current_user_id)
+    return {
+        "tickets": [
+            {
+                "id": row[0],
+                "conversation_id": row[1],
+                "subject": row[2],
+                "status": row[3],
+                "created_at": row[4],
+            }
+            for row in rows
+        ]
+    }
+
+
+@app.get("/tickets/{ticket_id}")
+def get_ticket(ticket_id: int, current_user_id: int = Depends(get_current_user)):
+    row = get_ticket_for_user(ticket_id, current_user_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return {
+        "id": row[0],
+        "conversation_id": row[1],
+        "subject": row[2],
+        "description": row[3],
+        "status": row[4],
+        "created_at": row[5],
+    }
+
+
+def get_current_agent(current_user_id: int = Depends(get_current_user)):
+    user = get_user_by_id(current_user_id)
+    if not user or user[4] not in ("agent", "admin"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return current_user_id
+
+
+@app.get("/admin/dashboard")
+def get_dashboard(current_agent_id: int = Depends(get_current_agent)):
+    return get_dashboard_stats()
+
+
+@app.get("/admin/tickets")
+def admin_get_tickets(current_agent_id: int = Depends(get_current_agent)):
+    rows = get_all_tickets()
+    return {
+        "tickets": [
+            {
+                "id": row[0],
+                "conversation_id": row[1],
+                "subject": row[2],
+                "status": row[3],
+                "created_at": row[4],
+                "customer_name": row[5],
+            }
+            for row in rows
+        ]
+    }
+
+
+@app.get("/admin/tickets/{ticket_id}")
+def admin_get_ticket(ticket_id: int, current_agent_id: int = Depends(get_current_agent)):
+    row = get_ticket_details(ticket_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return {
+        "id": row[0],
+        "conversation_id": row[1],
+        "subject": row[2],
+        "description": row[3],
+        "status": row[4],
+        "created_at": row[5],
+        "customer_name": row[6],
     }
