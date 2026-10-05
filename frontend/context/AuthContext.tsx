@@ -53,12 +53,9 @@ export function AuthProvider({
 
         setUser(data);
         setIsAuthenticated(true);
-      } catch (error) {
-        console.error(
-          "Authentication check failed:",
-          error
-        );
-
+      } catch (error: any) {
+        // Expected when user is not logged in.
+        // We do not log this as an error to avoid triggering Next.js dev overlays.
         setUser(null);
         setIsAuthenticated(false);
       } finally {
