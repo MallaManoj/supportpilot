@@ -71,17 +71,14 @@ export function AuthProvider({
 
   const logout = async () => {
     try {
-      const response = await apiFetch("/auth/logout", {
+      await apiFetch("/auth/logout", {
         method: "POST",
       });
-
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
       setUser(null);
       setIsAuthenticated(false);
-    } catch (error) {
-      console.error(
-        "Logout failed:",
-        error
-      );
     }
   };
 
