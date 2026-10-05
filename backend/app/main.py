@@ -18,6 +18,7 @@ from app.db import (
     get_messages_for_user,
     conversation_belongs_to_user,
     get_user_by_id,
+    update_conversation_timestamp,
 )
 from app.schemas import LoginRequest, RegisterRequest
 from app.security import (
@@ -91,6 +92,10 @@ def chat(
         conversation_id=request.conversation_id,
         role="assistant",
         content=reply,
+    )
+
+    update_conversation_timestamp(
+        request.conversation_id
     )
 
     return {

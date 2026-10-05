@@ -268,3 +268,23 @@ def get_user_by_id(user_id: int):
 
     finally:
         connection.close()
+
+
+def update_conversation_timestamp(
+    conversation_id: int,
+) -> None:
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE conversations
+                SET updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                """,
+                (conversation_id,),
+            )
+        connection.commit()
+    finally:
+        connection.close()
