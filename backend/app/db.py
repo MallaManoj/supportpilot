@@ -12,7 +12,10 @@ def get_connection():
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL is not configured")
 
-    return psycopg.connect(DATABASE_URL)
+    return psycopg.connect(
+        DATABASE_URL,
+        connect_timeout=5,
+    )
 
 
 def save_conversation(user_message: str, assistant_message: str):
