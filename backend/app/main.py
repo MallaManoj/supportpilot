@@ -19,6 +19,7 @@ from app.db import (
     conversation_belongs_to_user,
     get_user_by_id,
     update_conversation_timestamp,
+    update_conversation_title,
 )
 from app.schemas import LoginRequest, RegisterRequest
 from app.security import (
@@ -80,10 +81,25 @@ def chat(
             detail="Conversation not found",
         )
 
+    if not request.message.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Message cannot be empty",
+        )
+
     save_message(
         conversation_id=request.conversation_id,
         role="user",
         content=request.message,
+    )
+
+    conversation_title = request.message.strip()
+    if len(conversation_title) > 50:
+        conversation_title = conversation_title[:50] + "..."
+
+    update_conversation_title(
+        request.conversation_id,
+        conversation_title,
     )
 
     reply = f"SupportPilot received: {request.message}"

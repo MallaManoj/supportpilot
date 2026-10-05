@@ -289,3 +289,24 @@ def update_conversation_timestamp(
         connection.commit()
     finally:
         connection.close()
+
+
+def update_conversation_title(
+    conversation_id: int,
+    title: str,
+) -> None:
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE conversations
+                SET title = %s
+                WHERE id = %s
+                """,
+                (title, conversation_id),
+            )
+        connection.commit()
+    finally:
+        connection.close()
