@@ -24,6 +24,7 @@ from app.db import (
     update_conversation_timestamp,
     update_conversation_title,
     get_connection,
+    create_document,
 )
 from app.schemas import LoginRequest, RegisterRequest
 from app.security import (
@@ -364,4 +365,21 @@ def logout(response: Response):
 
     return {
         "message": "Logout successful"
+    }
+
+
+@app.post("/documents")
+def upload_document(
+    title: str,
+    content: str,
+    current_user=Depends(get_current_user),
+):
+    document_id = create_document(
+        title=title,
+        source=None,
+        content=content,
+    )
+    return {
+        "document_id": document_id,
+        "message": "Document created",
     }

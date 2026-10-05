@@ -313,3 +313,46 @@ def update_conversation_title(
         connection.commit()
     finally:
         connection.close()
+
+
+def create_document(title: str, source: str | None, content: str) -> int:
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO documents (title, source, content)
+                VALUES (%s, %s, %s)
+                RETURNING id
+                """,
+                (title, source, content),
+            )
+            document_id = cursor.fetchone()[0]
+        connection.commit()
+        return document_id
+    finally:
+        connection.close()
+
+
+def create_document_chunk(
+    document_id: int,
+    chunk_index: int,
+    content: str,
+) -> int:
+    connection = get_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO document_chunks
+                    (document_id, chunk_index, content)
+                VALUES (%s, %s, %s)
+                RETURNING id
+                """,
+                (document_id, chunk_index, content),
+            )
+            chunk_id = cursor.fetchone()[0]
+        connection.commit()
+        return chunk_id
+    finally:
+        connection.close()
