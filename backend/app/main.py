@@ -9,6 +9,7 @@ from fastapi import (
     Cookie
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.db import (
@@ -37,6 +38,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SupportPilot API")
+
+@app.exception_handler(Exception)
+async def handle_unexpected_error(request, exc):
+    logger.exception(
+        "Unhandled server error: %s %s",
+        request.method,
+        request.url.path,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal server error",
+        },
+    )
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
