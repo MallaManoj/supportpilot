@@ -22,7 +22,7 @@ export default function AppShell({
 
     const loadConversations = async () => {
         try {
-            const response = await fetch("http://localhost:8000/conversations", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conversations`, {
                 credentials: "include",
             });
             const data = await response.json();
@@ -43,7 +43,7 @@ export default function AppShell({
 
     const handleCreateConversation = async () => {
         try {
-            const response = await fetch("http://localhost:8000/conversations", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conversations`, {
                 method: "POST",
                 credentials: "include",
             });

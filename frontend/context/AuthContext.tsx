@@ -36,7 +36,7 @@ export function AuthProvider({
 
   const login = async () => {
     const response = await fetch(
-      "http://localhost:8000/auth/me",
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
       {
         credentials: "include",
       }
@@ -58,7 +58,7 @@ export function AuthProvider({
     const checkAuthentication = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8000/auth/me",
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
           {
             credentials: "include",
           }
@@ -92,7 +92,7 @@ export function AuthProvider({
   const logout = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/auth/logout",
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
         {
           method: "POST",
           credentials: "include",

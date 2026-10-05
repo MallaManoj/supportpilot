@@ -27,7 +27,7 @@ export default function AuthForm() {
         try {
             if (mode === "register") {
                 const response = await fetch(
-                    "http://localhost:8000/auth/register",
+                    `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
                     {
                         method: "POST",
                         headers: {
@@ -61,7 +61,7 @@ export default function AuthForm() {
             }
 
             const response = await fetch(
-                "http://localhost:8000/auth/login",
+                `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
                 {
                     method: "POST",
                     headers: {

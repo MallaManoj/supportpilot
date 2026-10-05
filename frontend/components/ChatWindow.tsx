@@ -37,7 +37,7 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
     async function loadConversationHistory(id: number) {
         
         const response = await fetch(
-            `http://localhost:8000/conversations/${id}/messages`,
+            `${process.env.NEXT_PUBLIC_API_URL}/conversations/${id}/messages`,
             {
                 credentials: "include"
             }
@@ -85,7 +85,7 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
         setLoading(true);
 
         try {
-            const response = await fetch("http://localhost:8000/chat", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
