@@ -59,7 +59,7 @@ export default function Home() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return (
       <AuthForm />
     );
@@ -67,7 +67,7 @@ export default function Home() {
 
   return (
     <AppShell
-      user={user!}
+      user={user}
       onLogout={logout}
     />
   );
