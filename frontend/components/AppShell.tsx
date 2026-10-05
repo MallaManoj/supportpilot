@@ -6,6 +6,7 @@ import ConversationList from "@/components/ConversationList";
 import ChatWindow from "@/components/ChatWindow";
 import type { User } from "@/types/user";
 import type { Conversation } from "@/types/conversation";
+import { apiFetch } from "@/lib/api";
 
 type AppShellProps = {
     user: User;
@@ -22,9 +23,7 @@ export default function AppShell({
 
     const loadConversations = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conversations`, {
-                credentials: "include",
-            });
+            const response = await apiFetch("/conversations");
             const data = await response.json();
             if (response.ok) {
                 setConversations(data.conversations || []);
@@ -43,9 +42,8 @@ export default function AppShell({
 
     const handleCreateConversation = async () => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conversations`, {
+            const response = await apiFetch("/conversations", {
                 method: "POST",
-                credentials: "include",
             });
             const data = await response.json();
             if (response.ok) {

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import type { User } from "@/types/user";
+import { apiFetch } from "@/lib/api";
 
 type AuthContextType = {
   user: User | null;
@@ -35,12 +36,7 @@ export function AuthProvider({
     useState(true);
 
   const login = async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-      {
-        credentials: "include",
-      }
-    );
+    const response = await apiFetch("/auth/me");
 
     if (!response.ok) {
       throw new Error(
@@ -57,12 +53,7 @@ export function AuthProvider({
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-          {
-            credentials: "include",
-          }
-        );
+        const response = await apiFetch("/auth/me");
 
         if (response.ok) {
           const data: User = await response.json();
@@ -91,13 +82,9 @@ export function AuthProvider({
 
   const logout = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
+      const response = await apiFetch("/auth/logout", {
+        method: "POST",
+      });
 
       if (response.ok) {
         setUser(null);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { apiFetch } from "@/lib/api";
 
 type AuthMode = "login" | "register";
 
@@ -26,14 +27,10 @@ export default function AuthForm() {
 
         try {
             if (mode === "register") {
-                const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
+                const response = await apiFetch(
+                    "/auth/register",
                     {
                         method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        credentials: "include",
                         body: JSON.stringify({
                             name,
                             email,
@@ -60,18 +57,14 @@ export default function AuthForm() {
                 return;
             }
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+            const response = await apiFetch(
+                "/auth/login",
                 {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
                     body: JSON.stringify({
                         email,
                         password,
                     }),
-                    credentials: "include", // Essential for receiving httponly cookie
                 }
             );
 

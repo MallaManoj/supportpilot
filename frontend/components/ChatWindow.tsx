@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Message } from "@/types/message";
+import { apiFetch } from "@/lib/api";
 
 const initialMessages: Message[] = [
     {
@@ -36,11 +37,8 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
 
     async function loadConversationHistory(id: number) {
         
-        const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/conversations/${id}/messages`,
-            {
-                credentials: "include"
-            }
+        const response = await apiFetch(
+            `/conversations/${id}/messages`
         );
 
         if (response.ok) {
@@ -85,12 +83,8 @@ export default function ChatWindow({ conversationId }: ChatWindowProps) {
         setLoading(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
+            const response = await apiFetch("/chat", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
                 body: JSON.stringify({
                     message: content,
                     conversation_id: conversationId,
