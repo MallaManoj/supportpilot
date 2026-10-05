@@ -120,10 +120,11 @@ def get_conversations(user_id: int):
                 SELECT
                     id,
                     title,
-                    created_at
+                    created_at,
+                    updated_at
                 FROM conversations
                 WHERE user_id = %s
-                ORDER BY created_at DESC
+                ORDER BY updated_at DESC
                 """,
                 (user_id,),
             )

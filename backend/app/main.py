@@ -170,6 +170,7 @@ def list_conversations(
                 "id": row[0],
                 "title": row[1],
                 "created_at": row[2],
+                "updated_at": row[3],
             }
             for row in rows
         ]
